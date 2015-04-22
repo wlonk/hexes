@@ -5,7 +5,7 @@ Credits
 Development Lead
 ----------------
 
-* Kit La Touche <kit@transneptune.net>
+* `@wlonk <https://twitter.com/wlonk>`_: Kit La Touche <kit@transneptune.net>
 
 Contributors
 ------------
