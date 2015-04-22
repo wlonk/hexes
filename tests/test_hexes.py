@@ -1,28 +1,14 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-"""
-test_hexes
-----------------------------------
-
-Tests for `hexes` module.
-"""
-
-import unittest
-
-from hexes import hexes
+import pytest
+from hexes import Application
 
 
-class TestHexes(unittest.TestCase):
+@pytest.mark.xfail(reason="Curses again.", run=False)
+def test_setup_and_teardown():
+    with pytest.raises(RuntimeError):
+        with Application():
+            raise RuntimeError
 
-    def setUp(self):
-        pass
 
-    def test_something(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-if __name__ == '__main__':
-    unittest.main()
+def test_placeholder():
+    assert True

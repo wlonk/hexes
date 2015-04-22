@@ -64,7 +64,7 @@ Ready to contribute? Here's how to set up `hexes` for local development.
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv hexes
+    $ mkvirtualenv hexes --python=$(which python3)
     $ cd hexes/
     $ python setup.py develop
 
@@ -99,13 +99,12 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
-3. The pull request should work for Python 2.6, 2.7, 3.3, and 3.4, and for PyPy. Check
-   https://travis-ci.org/wlonk/hexes/pull_requests
-   and make sure that the tests pass for all supported Python versions.
+3. The pull request should work for Python 3.4. Check the tests on your pull
+   request and make sure that the tests pass for all supported Python versions.
 
 Tips
 ----
 
 To run a subset of tests::
 
-    $ python -m unittest tests.test_hexes
+    $ python setup.py test path/to/particular/test
