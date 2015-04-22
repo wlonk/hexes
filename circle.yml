@@ -1,5 +1,5 @@
 machine:
   python:
     version: 2.7.9
-  pre:
+  post:
     - pyenv global 2.7.9 3.4.2
