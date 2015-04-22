@@ -2,7 +2,7 @@
 Hexes
 ===============================
 
-.. image:: https://circleci.com/gh/wlonk/hexes.svg?style=svg
+.. image:: https://img.shields.io/circleci/project/wlonk/hexes.svg
         :target: https://circleci.com/gh/wlonk/hexes
 
 .. image:: https://img.shields.io/pypi/v/hexes.svg
