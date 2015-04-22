@@ -1,3 +1,6 @@
 machine:
   python:
     version: 2.7.9
+test:
+  override:
+    - ./run_tests.sh
