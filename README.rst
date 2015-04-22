@@ -1,3 +1,6 @@
+.. image:: https://badge.waffle.io/wlonk/hexes.png?label=ready&title=Ready 
+ :target: https://waffle.io/wlonk/hexes
+ :alt: 'Stories in Ready'
 ===============================
 Hexes
 ===============================
