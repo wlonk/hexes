@@ -91,7 +91,10 @@ class Application(object):
         curses.noecho()
         curses.cbreak()
         self.stdscr.keypad(1)
-        curses.curs_set(0)
+        try:
+            curses.curs_set(0)
+        except:  # Gotta catch 'em all. We don't care that much abotu setitng curs to 0.
+            pass
         return self
 
     def __exit__(self, *args):
