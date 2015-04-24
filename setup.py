@@ -1,11 +1,39 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 try:
-    from setuptools import setup
+    from setuptools import (
+        Command,
+        setup,
+    )
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import (
+        Command,
+        setup,
+    )
+
+
+class PyTest(Command):
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import pexpect
+        import sys
+        print("To see output, run tests via py.test directly. This will fail on a headless setup.")
+        output, errno = pexpect.run(' '.join([
+            sys.executable,
+            'runtests.py',
+            # Since CircleCI puts the venv in the source tree:
+            '--ignore', 'venv',
+            '-s',
+        ]), withexitstatus=True)
+        print(output.decode('utf-8'))
+        raise SystemExit(errno)
 
 
 with open('README.rst') as readme_file:
@@ -15,11 +43,13 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    'wheel==0.24.0',
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'py==1.4.26',
+    'pytest==2.7.0',
+    'pexpect==3.3',
 ]
 
 setup(
@@ -45,11 +75,10 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
     ],
+    cmdclass={'test': PyTest},
     test_suite='tests',
-    tests_require=test_requirements
+    tests_require=test_requirements,
 )
