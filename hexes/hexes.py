@@ -7,11 +7,21 @@ from utils import (
 
 
 class Style(object):
+    class Layout:
+        Vertical = "vertical"
+        Horizontal = "horizontal"
+
     class Height:
         Auto = "auto"
 
+    class Width:
+        Auto = "auto"
+
+    layout = Layout.Vertical
     min_height = 0
     height = Height.Auto
+    min_width = 0
+    width = Width.Auto
 
     def __init__(self, **kwargs):
         self.__dict__.update(**kwargs)
@@ -56,22 +66,53 @@ class Box(object):
             return self.style.height
         if self.parent is not None:
             inside_height = self.parent.available_height - 2
-            inside_height -= sum([
-                sib.style.height
-                for sib in self.siblings
-                if type(sib.style.height) == int
-            ])
-            auto_sibs = [
-                sib
-                for sib in self.siblings
-                if sib.style.height == Style.Height.Auto
-            ]
-            return floor(inside_height / len(auto_sibs) + 1) - 1
+            if self.parent.style.layout == Style.Layout.Horizontal:
+                return inside_height
+            if self.parent.style.layout == Style.Layout.Vertical:
+                inside_height -= sum([
+                    sib.style.height
+                    for sib in self.siblings
+                    if type(sib.style.height) == int
+                ])
+                auto_sibs = [
+                    sib
+                    for sib in self.siblings
+                    if sib.style.height == Style.Height.Auto
+                ]
+                return floor(inside_height / len(auto_sibs) + 1) - 1
         return 2
 
     @available_height.setter
     def available_height(self, val):
         self._available_height = val
+
+    @property
+    def available_width(self):
+        if self._available_width is not None:
+            return self._available_width
+        if type(self.style.width) == int:
+            return self.style.width
+        if self.parent is not None:
+            inside_width = self.parent.available_width - 2
+            if self.parent.style.layout == Style.Layout.Vertical:
+                return inside_width
+            if self.parent.style.layout == Style.Layout.Horizontal:
+                inside_width -= sum([
+                    sib.style.width
+                    for sib in self.siblings
+                    if type(sib.style.width) == int
+                ])
+                auto_sibs = [
+                    sib
+                    for sib in self.siblings
+                    if sib.style.width == Style.Width.Auto
+                ]
+                return floor(inside_width / len(auto_sibs) + 1) - 1
+        return 2
+
+    @available_width.setter
+    def available_width(self, val):
+        self._available_width = val
 
     @property
     def height(self):
@@ -86,9 +127,14 @@ class Box(object):
 
     @property
     def width(self):
-        if self.parent is None:
+        if not self.children:
+            required_width = 2
+        required_width = sum(c.width for c in self.children) + 2
+        if self.style.width == Style.Width.Auto:
             return self.available_width
-        return self.parent.width - 2
+        if type(self.style.width) == int:
+            return self.style.width
+        return max(required_width, self.style.min_width)
 
     @property
     def ancestors(self):
@@ -115,13 +161,23 @@ class Box(object):
     @property
     def upper_left(self):
         if self.parent is not None:
-            parent_height = self.parent.upper_left.y + 1
+            x, y = self.parent.upper_left
+            layout = self.parent.style.layout
         else:
-            parent_height = 0
-        return Point(
-            len(self.ancestors),
-            sum(os.height for os in self.older_siblings) + parent_height,
-        )
+            x, y = -1, -1
+            layout = Style.layout
+
+        if layout == Style.Layout.Horizontal:
+            point = Point(
+                sum(os.width for os in self.older_siblings) + x + 1,
+                y + 1,
+            )
+        else:
+            point = Point(
+                x + 1,
+                sum(os.height for os in self.older_siblings) + y + 1,
+            )
+        return point
 
     @property
     def lower_right(self):
@@ -210,11 +266,20 @@ class Application(object):
         self._registry[key] = fn
 
     def add_window(self, box):
-        upper_left = box.upper_left
         win_x, win_y = self.get_window_size()
-        x, y = upper_left
-        columns = win_x - (x * 2)
-        lines = box.height
+        x, y = box.upper_left
+
+        if box.parent is not None:
+            if box.parent.style.layout == Style.Layout.Horizontal:
+                columns = box.width
+                lines = box.parent.height - 2
+            else:
+                columns = box.parent.width - 2
+                lines = box.height
+        else:
+            columns = win_x
+            lines = win_y
+
         win = curses.newwin(lines, columns, y, x)
         win.border()
         if box.title:
@@ -234,15 +299,24 @@ if __name__ == "__main__":
                 style=Style(
                     min_height=10,
                     height=10,
+                    layout=Style.Layout.Horizontal,
                 ),
                 children=(
                     Box(
                         title="AA",
-                        style=Style(min_height=2),
+                        style=Style(
+                            min_height=2,
+                        ),
+                        children=(
+                            Box(title="AAA"),
+                            Box(title="AAB"),
+                        ),
                     ),
                     Box(
                         title="AB",
-                        style=Style(min_height=2),
+                        style=Style(
+                            min_height=2,
+                        ),
                     ),
                 ),
             ),
