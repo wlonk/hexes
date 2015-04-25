@@ -20,7 +20,12 @@ Curses for humans.
 
 * Free software: BSD license
 
+This is very very alpha! I'm working on it, though, and would love your
+feedback, pull requests, and enthusiasm.
+
+Thanks!
+
 Features
 --------
 
-* TODO
+* It can draw boxes, lay them out, and resize them. FANCY!
