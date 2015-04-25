@@ -12,6 +12,14 @@ hexes.hexes module
     :undoc-members:
     :show-inheritance:
 
+hexes.utils module
+------------------
+
+.. automodule:: hexes.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
