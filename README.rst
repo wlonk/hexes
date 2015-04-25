@@ -2,19 +2,17 @@
 Hexes
 ===============================
 
-.. image:: https://img.shields.io/pypi/v/hexes.svg?style=plastic
-        :target: https://pypi.python.org/pypi/hexes
-
-.. image:: https://badge.waffle.io/wlonk/hexes.png?label=ready&title=Ready 
-        :target: https://waffle.io/wlonk/hexes
-        :alt: 'Stories in Ready'
-
-.. image:: https://img.shields.io/circleci/project/wlonk/hexes.svg?style=plastic
-        :target: https://circleci.com/gh/wlonk/hexes
-
-.. image:: https://readthedocs.org/projects/pip/badge/?style=plastic
-        :target: https://hexes.readthedocs.org/
-
++---------------+---------------+
+| Service       | Status        |
++===============+===============+
+| PyPI          | |pypi|        |
++---------------+---------------+
+| Waffle.io     | |waffleio|    |
++---------------+---------------+
+| CircleCI      | |circleci|    |
++---------------+---------------+
+| Read the Docs | |readthedocs| |
++---------------+---------------+
 
 Curses for humans.
 
@@ -29,3 +27,19 @@ Features
 --------
 
 * It can draw boxes, lay them out, and resize them. FANCY!
+
+.. |pypi| image:: https://img.shields.io/pypi/v/hexes.svg?style=plastic                
+                :target: https://pypi.python.org/pypi/hexes                                
+                :alt: 'Latest PyPI version'                                                
+
+.. |waffleio| image:: https://badge.waffle.io/wlonk/hexes.png?label=ready&title=Ready      
+                :target: https://waffle.io/wlonk/hexes                                     
+                :alt: 'Stories in Ready'                                                   
+
+.. |circleci| image:: https://img.shields.io/circleci/project/wlonk/hexes.svg?style=plastic
+                :target: https://circleci.com/gh/wlonk/hexes                               
+                :alt: 'Latest build status'                                                
+
+.. |readthedocs| image:: https://readthedocs.org/projects/pip/badge/?style=plastic            
+                :target: https://hexes.readthedocs.org/                                    
+                :alt: 'Latest documentation'                                               
