@@ -1,15 +1,28 @@
-# -*- coding: utf-8 -*-
 import curses
+from math import floor
 from utils import (
     Point,
     flatten,
 )
 
 
+class Style(object):
+    class Height:
+        Auto = "auto"
+
+    min_height = 0
+    height = Height.Auto
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(**kwargs)
+
+
 class Box(object):
-    def __init__(self, title=None, min_height=0, children=None):
+    def __init__(self, title=None, style=None, children=None):
         self.title = title
-        self.min_height = min_height
+        self.style = style or Style()
+        self._available_height = None
+        self._available_width = None
         self.parent = None
         self.children = []
         children = children or []
@@ -20,23 +33,62 @@ class Box(object):
             return "Box: {}".format(self.title)
         return "Box"
 
-    def __unicode__(self):
-        return unicode(str(self))
-
-    __repr__ = __str__
+    def __repr__(self):
+        return "Box(title={s.title!r}, style={s.style!r}, children=[...])".format(s=self)
 
     @property
     def traverse_pre_order(self):
-        return [self] + [x for x in flatten(c.whole_tree for c in self.children)]
+        return [self] + [x for x in flatten(c.traverse_pre_order for c in self.children)]
 
-    whole_tree = traverse_pre_order
+    @property
+    def root(self):
+        def _helper(node):
+            if node.parent is None:
+                return node
+            return _helper(node.parent)
+        return _helper(self)
+
+    @property
+    def available_height(self):
+        if self._available_height is not None:
+            return self._available_height
+        if type(self.style.height) == int:
+            return self.style.height
+        if self.parent is not None:
+            inside_height = self.parent.available_height - 2
+            inside_height -= sum([
+                sib.style.height
+                for sib in self.siblings
+                if type(sib.style.height) == int
+            ])
+            auto_sibs = [
+                sib
+                for sib in self.siblings
+                if sib.style.height == Style.Height.Auto
+            ]
+            return floor(inside_height / len(auto_sibs) + 1) - 1
+        return 2
+
+    @available_height.setter
+    def available_height(self, val):
+        self._available_height = val
 
     @property
     def height(self):
         if not self.children:
-            ret = 2
-        ret = sum(c.height for c in self.children) + 2
-        return max(ret, self.min_height)
+            required_height = 2
+        required_height = sum(c.height for c in self.children) + 2
+        if self.style.height == Style.Height.Auto:
+            return self.available_height
+        if type(self.style.height) == int:
+            return self.style.height
+        return max(required_height, self.style.min_height)
+
+    @property
+    def width(self):
+        if self.parent is None:
+            return self.available_width
+        return self.parent.width - 2
 
     @property
     def ancestors(self):
@@ -45,16 +97,38 @@ class Box(object):
         return []
 
     @property
+    def older_siblings(self):
+        if self.parent is None:
+            return []
+        return self.parent.children[:self.parent.children.index(self)]
+
+    @property
+    def younger_siblings(self):
+        if self.parent is None:
+            return []
+        return self.parent.children[self.parent.children.index(self):]
+
+    @property
+    def siblings(self):
+        return self.older_siblings + self.younger_siblings
+
+    @property
     def upper_left(self):
         if self.parent is not None:
-            older_siblings = self.parent.children[:self.parent.children.index(self)]
             parent_height = self.parent.upper_left.y + 1
         else:
-            older_siblings = []
             parent_height = 0
         return Point(
             len(self.ancestors),
-            sum(os.height for os in older_siblings) + parent_height,
+            sum(os.height for os in self.older_siblings) + parent_height,
+        )
+
+    @property
+    def lower_right(self):
+        x, y = self.upper_left
+        return Point(
+            x + self.width,
+            y + self.height,
         )
 
     def add_child(self, child):
@@ -74,12 +148,17 @@ class Application(object):
         self.windows = []
         self.root = root
         if root is not None:
-            self.add_windows(*root.whole_tree)
+            x, y = self.get_window_size()
+            self.root.available_height = y
+            self.root.available_width = x
+            self.add_windows(*root.traverse_pre_order)
 
     def render(self):
         self.stdscr.refresh()
         if self.root:
-            assert self.root.height <= self.get_window_size().y, "Root window too large."
+            x, y = self.get_window_size()
+            assert self.root.height <= y, "Root window too large."
+            assert self.root.width <= x, "Root window too large."
         for win in self.windows:
             win.refresh()
 
@@ -152,26 +231,43 @@ if __name__ == "__main__":
         children=(
             Box(
                 title="A",
-                min_height=7,
+                style=Style(
+                    min_height=10,
+                    height=10,
+                ),
                 children=(
-                    Box(title="AA"),
-                    Box(title="AB"),
+                    Box(
+                        title="AA",
+                        style=Style(min_height=2),
+                    ),
+                    Box(
+                        title="AB",
+                        style=Style(min_height=2),
+                    ),
                 ),
             ),
             Box(
                 title="B",
-                min_height=5,
+                style=Style(
+                    min_height=2,
+                    height=5,
+                ),
             ),
             Box(
                 title="C",
+                style=Style(min_height=2),
                 children=(
-                    Box(title="CA"),
+                    Box(
+                        title="CA",
+                        style=Style(min_height=2),
+                    ),
                     Box(
                         title="CB",
+                        style=Style(min_height=2),
                         children=(
                             Box(
                                 title="CBA",
-                                min_height=10,
+                                style=Style(min_height=2),
                             ),
                         ),
                     ),
