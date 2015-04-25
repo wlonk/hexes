@@ -201,20 +201,19 @@ class Application(object):
         self.stdscr = curses.initscr()
         self._registry = {}
         self.logs = []
-        self.windows = []
         self.root = root
         if root is not None:
-            x, y = self.get_window_size()
-            self.root.available_height = y
-            self.root.available_width = x
-            self.add_windows(*root.traverse_pre_order)
+            self.recalculate_windows()
+
+    def recalculate_windows(self):
+        self.windows = []
+        x, y = self.get_window_size()
+        self.root.available_height = y
+        self.root.available_width = x
+        self.add_windows(*root.traverse_pre_order)
 
     def render(self):
         self.stdscr.refresh()
-        if self.root:
-            x, y = self.get_window_size()
-            assert self.root.height <= y, "Root window too large."
-            assert self.root.width <= x, "Root window too large."
         for win in self.windows:
             win.refresh()
 
@@ -243,6 +242,7 @@ class Application(object):
             handler = self._registry[chr(key)]
             handler()
         if key == curses.KEY_RESIZE:
+            self.recalculate_windows()
             self.render()
 
     def run(self):
