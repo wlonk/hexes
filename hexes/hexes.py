@@ -219,7 +219,7 @@ class Application(object):
         x, y = self.get_window_size()
         self.root.available_height = y
         self.root.available_width = x
-        self.add_windows(*root.traverse_pre_order)
+        self.add_windows(*self.root.traverse_pre_order)
 
     def render(self):
         self.stdscr.refresh()
@@ -300,67 +300,3 @@ class Application(object):
     def add_windows(self, *boxes):
         for box in boxes:
             self.add_window(box)
-
-if __name__ == "__main__":
-    root = Box(
-        title="Root",
-        children=(
-            Box(
-                title="A",
-                style=Style(
-                    min_height=10,
-                    height=10,
-                    layout=Style.Layout.Horizontal,
-                ),
-                children=(
-                    Box(
-                        title="AA",
-                        style=Style(
-                            min_height=2,
-                        ),
-                        children=(
-                            Box(title="AAA"),
-                            Box(title="AAB"),
-                        ),
-                    ),
-                    Box(
-                        title="AB",
-                        style=Style(
-                            min_height=2,
-                        ),
-                    ),
-                ),
-            ),
-            Box(
-                title="B",
-                style=Style(
-                    min_height=2,
-                    height=5,
-                ),
-            ),
-            Box(
-                title="C",
-                style=Style(min_height=2),
-                children=(
-                    Box(
-                        title="CA",
-                        style=Style(min_height=2),
-                    ),
-                    Box(
-                        title="CB",
-                        style=Style(min_height=2),
-                        children=(
-                            Box(
-                                title="CBA",
-                                style=Style(min_height=2),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        ),
-    )
-    with Application(root=root) as app:
-        app.register('q', app.quit)
-        app.run()
-    print('\n'.join(app.logs))

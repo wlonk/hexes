@@ -7,27 +7,74 @@ To use Hexes in a project::
     from hexes import (
         Application,
         Box,
+        Style,
     )
 
-    layout = Box(
-        title="Opening",
+    root = Box(
+        title="Root",
         children=(
             Box(
-                title="test",
-            ),
-            Box(
+                title="A",
+                style=Style(
+                    min_height=10,
+                    height=10,
+                    layout=Style.Layout.Horizontal,
+                ),
                 children=(
                     Box(
-                        title="Nested",
+                        title="AA",
+                        style=Style(
+                            min_height=2,
+                        ),
+                        children=(
+                            Box(title="AAA"),
+                            Box(title="AAB"),
+                        ),
+                    ),
+                    Box(
+                        title="AB",
+                        style=Style(
+                            min_height=2,
+                        ),
+                    ),
+                ),
+            ),
+            Box(
+                title="B",
+                style=Style(
+                    min_height=2,
+                    height=5,
+                ),
+            ),
+            Box(
+                title="C",
+                style=Style(min_height=2),
+                children=(
+                    Box(
+                        title="CA",
+                        style=Style(min_height=2),
+                    ),
+                    Box(
+                        title="CB",
+                        style=Style(min_height=2),
+                        children=(
+                            Box(
+                                title="CBA",
+                                style=Style(min_height=2),
+                            ),
+                        ),
                     ),
                 ),
             ),
         ),
     )
 
-    with Application(root=layout) as app:
+    with Application(root=root) as app:
         app.register('q', app.quit)
         app.run()
+
+    print('\n'.join(app.logs))
+
 
 Right now, all it does is draw boxes, lay them out, and resize them. Don't
 worry, this is very alpha and will grow into a beautiful flower.

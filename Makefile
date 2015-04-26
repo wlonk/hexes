@@ -44,7 +44,7 @@ test-all:
 	tox
 
 coverage:
-	coverage run --source hexes setup.py test
+	coverage run --source hexes --module hexes.hexes
 	coverage report -m
 	coverage html
 	open htmlcov/index.html
