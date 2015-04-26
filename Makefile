@@ -68,3 +68,6 @@ dist: clean
 
 install: clean
 	python setup.py install
+
+run: clean
+	python -m hexes.hexes

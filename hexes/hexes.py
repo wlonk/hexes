@@ -1,6 +1,6 @@
 import curses
 from math import floor
-from utils import (
+from .utils import (
     Point,
     flatten,
 )
@@ -44,11 +44,15 @@ class Box(object):
         return "Box"
 
     def __repr__(self):
-        return "Box(title={s.title!r}, style={s.style!r}, children=[...])".format(s=self)
+        return (
+            "Box(title={s.title!r}, style={s.style!r}, children=[...])"
+        ).format(s=self)
 
     @property
     def traverse_pre_order(self):
-        return [self] + [x for x in flatten(c.traverse_pre_order for c in self.children)]
+        return [self] + [
+            x for x in flatten(c.traverse_pre_order for c in self.children)
+        ]
 
     @property
     def root(self):
@@ -71,12 +75,12 @@ class Box(object):
             if self.parent.style.layout == Style.Layout.Vertical:
                 inside_height -= sum([
                     sib.style.height
-                    for sib in self.siblings
+                    for sib in self.siblings_including_self
                     if type(sib.style.height) == int
                 ])
                 auto_sibs = [
                     sib
-                    for sib in self.siblings
+                    for sib in self.siblings_including_self
                     if sib.style.height == Style.Height.Auto
                 ]
                 return floor(inside_height / len(auto_sibs) + 1) - 1
@@ -99,12 +103,12 @@ class Box(object):
             if self.parent.style.layout == Style.Layout.Horizontal:
                 inside_width -= sum([
                     sib.style.width
-                    for sib in self.siblings
+                    for sib in self.siblings_including_self
                     if type(sib.style.width) == int
                 ])
                 auto_sibs = [
                     sib
-                    for sib in self.siblings
+                    for sib in self.siblings_including_self
                     if sib.style.width == Style.Width.Auto
                 ]
                 return floor(inside_width / len(auto_sibs) + 1) - 1
@@ -152,11 +156,16 @@ class Box(object):
     def younger_siblings(self):
         if self.parent is None:
             return []
-        return self.parent.children[self.parent.children.index(self):]
+        # Plus one to exlude self.
+        return self.parent.children[self.parent.children.index(self) + 1:]
 
     @property
     def siblings(self):
         return self.older_siblings + self.younger_siblings
+
+    @property
+    def siblings_including_self(self):
+        return self.older_siblings + [self] + self.younger_siblings
 
     @property
     def upper_left(self):
@@ -227,7 +236,9 @@ class Application(object):
         self.stdscr.keypad(1)
         try:
             curses.curs_set(0)
-        except:  # Gotta catch 'em all. We don't care that much abotu setitng curs to 0.
+        except:
+            # Gotta catch 'em all. We don't care that much about setitng curs
+            # to 0.
             pass
         return self
 
