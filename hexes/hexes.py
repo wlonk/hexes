@@ -3,6 +3,7 @@ from math import floor
 from .utils import (
     Point,
     flatten,
+    wrap_by_paragraph,
 )
 
 
@@ -28,9 +29,10 @@ class Style(object):
 
 
 class Box(object):
-    def __init__(self, title=None, style=None, children=None):
+    def __init__(self, title=None, style=None, text=None, children=None):
         self.title = title
         self.style = style or Style()
+        self.text = text
         self._available_height = None
         self._available_width = None
         self.parent = None
@@ -130,6 +132,10 @@ class Box(object):
         return max(required_height, self.style.min_height)
 
     @property
+    def inner_height(self):
+        return self.height - 2
+
+    @property
     def width(self):
         if not self.children:
             required_width = 2
@@ -139,6 +145,10 @@ class Box(object):
         if type(self.style.width) == int:
             return self.style.width
         return max(required_width, self.style.min_width)
+
+    @property
+    def inner_width(self):
+        return self.width - 2
 
     @property
     def ancestors(self):
@@ -223,8 +233,11 @@ class Application(object):
 
     def render(self):
         self.stdscr.refresh()
-        for win in self.windows:
+        for box, win, pad in self.windows:
             win.refresh()
+            x, y = box.upper_left
+            dx, dy = box.lower_right
+            pad.refresh(0, 0, y + 1, x + 1, dy - 2, dx - 2)
 
     def log(self, *args):
         msg = " ".join(map(str, args))
@@ -292,10 +305,18 @@ class Application(object):
             lines = win_y
 
         win = curses.newwin(lines, columns, y, x)
+        # Attach a pad to the window, to allow text overflow.
+        pad = curses.newpad(box.inner_width, 1000)
         win.border()
         if box.title:
             win.addstr(0, 1, box.title)
-        self.windows.append(win)
+        if box.text:
+            pad.addstr(
+                0,
+                0,
+                wrap_by_paragraph(box.text, width=box.inner_width),
+            )
+        self.windows.append((box, win, pad))
 
     def add_windows(self, *boxes):
         for box in boxes:
