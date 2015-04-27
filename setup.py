@@ -24,7 +24,10 @@ class PyTest(Command):
     def run(self):
         import pexpect
         import sys
-        print("To see output, run tests via py.test directly. This will fail on a headless setup.")
+        print(
+            "To see output, run tests via py.test directly. "
+            "This will fail on a headless setup."
+        )
         output, errno = pexpect.run(' '.join([
             sys.executable,
             'runtests.py',
@@ -71,12 +74,15 @@ setup(
     zip_safe=False,
     keywords='hexes',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
+        'Environment :: Console',
+        'Environment :: Console :: Curses',
+
     ],
     cmdclass={'test': PyTest},
     test_suite='tests',
