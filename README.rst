@@ -16,7 +16,7 @@ Hexes
 
 Curses for humans.
 
-* Free software: BSD license
+This is free software, under a BSD license.
 
 This is very very alpha! I'm working on it, though, and would love your
 feedback, pull requests, and enthusiasm.
@@ -27,6 +27,7 @@ Features
 --------
 
 * It can draw boxes, lay them out, and resize them. FANCY!
+* It can put text in boxes and only reveal the appropriate bits of it. SHINY!
 
 .. |pypi| image:: https://img.shields.io/pypi/v/hexes.svg?style=plastic                
                 :target: https://pypi.python.org/pypi/hexes                                
