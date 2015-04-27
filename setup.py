@@ -68,6 +68,9 @@ setup(
     ],
     package_dir={'hexes':
                  'hexes'},
+    scripts=(
+        'scripts/try_hexes',
+    ),
     include_package_data=True,
     install_requires=requirements,
     license="BSD",
