@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import subprocess
 
 from hexes import (
     Application,
@@ -55,6 +56,16 @@ root = Box(
     ),
 )
 
-with Application(root=root) as app:
+
+class ShowFiles(Application):
+    def show_files(self):
+        ls = str(subprocess.check_output('ls'), 'utf-8')
+        ls = ls.replace('\n', '\n\n')
+        self.root.children[0].children[0].text = ls
+        self.loop.call_later(1, self.show_files)
+
+
+with ShowFiles(root=root) as app:
     app.register('q', app.quit)
+    app.register('l', app.show_files)
     app.run()

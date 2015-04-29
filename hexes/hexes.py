@@ -1,4 +1,6 @@
+import asyncio
 import curses
+import logging
 from math import floor
 from .utils import (
     Point,
@@ -32,7 +34,8 @@ class Box(object):
     def __init__(self, title=None, style=None, text=None, children=None):
         self.title = title
         self.style = style or Style()
-        self.text = text
+        self._text = text
+        self._dirty = False
         self._available_height = None
         self._available_width = None
         self.parent = None
@@ -49,6 +52,26 @@ class Box(object):
         return (
             "Box(title={s.title!r}, style={s.style!r}, children=[...])"
         ).format(s=self)
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, val):
+        dirty = val != self._text
+        self._text = val
+        self.dirty = dirty
+
+    @property
+    def dirty(self):
+        return self._dirty
+
+    @dirty.setter
+    def dirty(self, val):
+        self._dirty = val
+        if val and self.root is not self:
+            self.root.dirty = val
 
     @property
     def traverse_pre_order(self):
@@ -219,10 +242,11 @@ class Application(object):
     def __init__(self, root=None):
         self.stdscr = curses.initscr()
         self._registry = {}
-        self.logs = []
         self.root = root
+        self.loop = asyncio.get_event_loop()
         if root is not None:
             self.recalculate_windows()
+            self.root.dirty = True
 
     def recalculate_windows(self):
         self.windows = []
@@ -232,26 +256,36 @@ class Application(object):
         self.add_windows(*self.root.traverse_pre_order)
 
     def render(self):
-        self.stdscr.refresh()
-        for box, win, pad in self.windows:
-            win.refresh()
-            x, y = box.upper_left
-            dx, dy = box.lower_right
-            pad.refresh(0, 0, y + 1, x + 1, dy - 2, dx - 2)
+        if self.root.dirty:
+            self.log("Rendering")
+            self.stdscr.refresh()
+            self.recalculate_windows()
+            self.root.dirty = False
+            for box, win, pad in self.windows:
+                win.refresh()
+                x, y = box.upper_left
+                dx, dy = box.lower_right
+                pad.refresh(0, 0, y + 1, x + 1, dy - 2, dx - 2)
+                box.dirty = False
+        self.loop.call_later(0.1, self.render)
 
     def log(self, *args):
         msg = " ".join(map(str, args))
-        self.logs.append(msg)
+        logging.info(msg)
 
     def __enter__(self):
+        logging.basicConfig(
+            filename='hexes.log',
+            level=logging.DEBUG,
+        )
         curses.noecho()
         curses.cbreak()
         self.stdscr.keypad(1)
+        curses.halfdelay(1)
         try:
             curses.curs_set(0)
         except:
-            # Gotta catch 'em all. We don't care that much about setitng curs
-            # to 0.
+            # We don't care that much about setitng curs to 0.
             pass
         return self
 
@@ -261,24 +295,27 @@ class Application(object):
         curses.echo()
         curses.endwin()
 
-    def _process_key(self, key):
+    def _process_key(self):
+        key = self.stdscr.getch()
         if 0 <= key < 256 and chr(key) in self._registry:
             handler = self._registry[chr(key)]
             handler()
         if key == curses.KEY_RESIZE:
-            self.recalculate_windows()
-            self.render()
+            self.log("Got a KEY_RESIZE")
+            self.root.dirty = True
+        self.loop.call_later(0.1, self._process_key)
 
     def run(self):
         self.render()
+        self.loop.call_soon(self.render)
+        self.loop.call_soon(self._process_key)
         try:
-            while True:
-                self._process_key(self.stdscr.getch())
-        except KeyboardInterrupt:
-            return
+            self.loop.run_forever()
+        except:
+            self.loop.close()
 
     def quit(self):
-        raise KeyboardInterrupt
+        self.loop.stop()
 
     def get_window_size(self):
         y, x = self.stdscr.getmaxyx()
