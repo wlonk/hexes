@@ -5,6 +5,7 @@ from math import floor
 from .utils import (
     Point,
     flatten,
+    modify,
     wrap_by_paragraph,
 )
 
@@ -59,9 +60,7 @@ class Box(object):
 
     @text.setter
     def text(self, val):
-        dirty = val != self._text
-        self._text = val
-        self.dirty = dirty
+        self._text, self.dirty = modify(self._text, val)
 
     @property
     def dirty(self):
