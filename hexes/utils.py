@@ -30,7 +30,3 @@ def wrap_by_paragraph(text, width=70, **kwargs):
         '\n'.join(wrap(paragraph, width=width, **kwargs))
         for paragraph in paragraphs
     )
-
-
-def modify(original, new):
-    return new, (original != new)

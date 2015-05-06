@@ -1,13 +1,14 @@
 import asyncio
 import curses
 import logging
+from collections import defaultdict
 from math import floor
 from .utils import (
     Point,
     flatten,
-    modify,
     wrap_by_paragraph,
 )
+from .behaviors import render
 
 
 class Style(object):
@@ -26,6 +27,7 @@ class Style(object):
     height = Height.Auto
     min_width = 0
     width = Width.Auto
+    flow = False
 
     def __init__(self, **kwargs):
         self.__dict__.update(**kwargs)
@@ -35,14 +37,22 @@ class Box(object):
     def __init__(self, title=None, style=None, text=None, children=None):
         self.title = title
         self.style = style or Style()
+        self.parent = None
         self._text = text
-        self._dirty = False
         self._available_height = None
         self._available_width = None
-        self.parent = None
         self.children = []
         children = children or []
         self.add_children(*children)
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, val):
+        self._text = val
+        self.root.dirty = True
 
     def __str__(self):
         if self.title:
@@ -53,24 +63,6 @@ class Box(object):
         return (
             "Box(title={s.title!r}, style={s.style!r}, children=[...])"
         ).format(s=self)
-
-    @property
-    def text(self):
-        return self._text
-
-    @text.setter
-    def text(self, val):
-        self._text, self.dirty = modify(self._text, val)
-
-    @property
-    def dirty(self):
-        return self._dirty
-
-    @dirty.setter
-    def dirty(self, val):
-        self._dirty = val
-        if val and self.root is not self:
-            self.root.dirty = val
 
     @property
     def traverse_pre_order(self):
@@ -240,47 +232,23 @@ class Box(object):
 class Application(object):
     def __init__(self, root=None):
         self.stdscr = curses.initscr()
-        self._registry = {}
+        self._registry = defaultdict(list)
         self.root = root
         self.loop = asyncio.get_event_loop()
         if root is not None:
             self.recalculate_windows()
             self.root.dirty = True
 
-    def recalculate_windows(self):
-        self.windows = []
-        x, y = self.get_window_size()
-        self.root.available_height = y
-        self.root.available_width = x
-        self.add_windows(*self.root.traverse_pre_order)
-
-    def render(self):
-        if self.root.dirty:
-            self.log("Rendering")
-            self.stdscr.refresh()
-            self.recalculate_windows()
-            self.root.dirty = False
-            for box, win, pad in self.windows:
-                win.refresh()
-                x, y = box.upper_left
-                dx, dy = box.lower_right
-                pad.refresh(0, 0, y + 1, x + 1, dy - 2, dx - 2)
-                box.dirty = False
-        self.loop.call_later(0.1, self.render)
-
-    def log(self, *args):
-        msg = " ".join(map(str, args))
-        logging.info(msg)
-
     def __enter__(self):
         logging.basicConfig(
             filename='hexes.log',
             level=logging.DEBUG,
         )
+        self.log("=" * 80)
         curses.noecho()
         curses.cbreak()
         self.stdscr.keypad(1)
-        curses.halfdelay(1)
+        self.stdscr.nodelay(1)
         try:
             curses.curs_set(0)
         except:
@@ -289,41 +257,11 @@ class Application(object):
         return self
 
     def __exit__(self, *args):
+        self.loop.close()
         curses.nocbreak()
         self.stdscr.keypad(0)
         curses.echo()
         curses.endwin()
-
-    def _process_key(self):
-        key = self.stdscr.getch()
-        if 0 <= key < 256 and chr(key) in self._registry:
-            handler = self._registry[chr(key)]
-            handler()
-        if key == curses.KEY_RESIZE:
-            self.log("Got a KEY_RESIZE")
-            self.root.dirty = True
-        self.loop.call_later(0.1, self._process_key)
-
-    def run(self):
-        self.render()
-        self.loop.call_soon(self.render)
-        self.loop.call_soon(self._process_key)
-        try:
-            self.loop.run_forever()
-        except:
-            self.loop.close()
-
-    def quit(self):
-        self.loop.stop()
-
-    def get_window_size(self):
-        y, x = self.stdscr.getmaxyx()
-        return Point(x, y)
-
-    def register(self, key, fn):
-        if len(key) != 1:
-            raise ValueError('Invalid key: {}'.format(repr(key)))
-        self._registry[key] = fn
 
     def add_window(self, box):
         win_x, win_y = self.get_window_size()
@@ -347,13 +285,60 @@ class Application(object):
         if box.title:
             win.addstr(0, 1, box.title)
         if box.text:
-            pad.addstr(
-                0,
-                0,
-                wrap_by_paragraph(box.text, width=box.inner_width),
-            )
+            if box.style.flow:
+                text = wrap_by_paragraph(box.text, width=box.inner_width)
+            else:
+                text = box.text
+            pad.addstr(0, 0, text)
         self.windows.append((box, win, pad))
 
     def add_windows(self, *boxes):
         for box in boxes:
             self.add_window(box)
+
+    def get_window_size(self):
+        y, x = self.stdscr.getmaxyx()
+        return Point(x, y)
+
+    def log(self, *args):
+        msg = " ".join(map(str, args))
+        logging.info(msg)
+
+    def on(self, event):
+        def decorator(fn):
+            if not asyncio.iscoroutinefunction(fn):
+                fn = asyncio.coroutine(fn)
+            self.register(event, fn)
+            return fn
+        return decorator
+
+    def recalculate_windows(self):
+        self.windows = []
+        x, y = self.get_window_size()
+        self.root.available_height = y
+        self.root.available_width = x
+        self.add_windows(*self.root.traverse_pre_order)
+
+    def register(self, event_id, fn):
+        self._registry[event_id].append(fn)
+        self.log("Run {} on {}".format(fn.__name__, event_id))
+
+    def run(self):
+        self.loop.call_soon(self.process_key)
+        self.loop.create_task(render(self))
+        for handler in self._registry['ready']:
+            self.loop.create_task(handler(self))
+        try:
+            self.loop.run_forever()
+        except:
+            self.loop.close()
+
+    def process_key(self):
+        try:
+            key = self.stdscr.getkey()
+            for handler in self._registry[key]:
+                self.loop.create_task(handler(self))
+        except curses.error:
+            pass
+        finally:
+            self.loop.call_later(0.1, self.process_key)
