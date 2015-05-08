@@ -1,35 +1,14 @@
 #!/usr/bin/env python
+import subprocess
 
 from hexes import (
     Application,
     Box,
     Style,
 )
+from hexes.behaviors import quit
 
-lipsum = """
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam ac justo sapien.
-In hac habitasse platea dictumst. In aliquam felis eget turpis sagittis, ac
-convallis quam euismod. Nam commodo enim vel vestibulum tempus. Fusce ac
-interdum dolor, vel sodales neque. Vivamus consectetur euismod maximus. Interdum
-et malesuada fames ac ante ipsum primis in faucibus. Lorem ipsum dolor sit amet,
-consectetur adipiscing elit. Nunc odio metus, volutpat ut congue non, egestas id
-ligula. Aenean egestas pellentesque felis vitae consectetur. In nec sem vitae
-neque pellentesque facilisis. Mauris dignissim lorem id pretium tincidunt.
-Pellentesque non erat erat. Aenean lobortis nec lorem nec vehicula. Nam eget
-lacus faucibus, lacinia ipsum eget, volutpat purus.
-
-Integer nec molestie massa. Pellentesque eu lectus nec nunc faucibus pretium ac
-ut lacus. Nulla sit amet tellus quis orci bibendum pharetra. Maecenas quis
-placerat mi. Suspendisse ligula tellus, iaculis at rutrum ut, elementum vitae
-est. Fusce vehicula commodo tellus sed finibus. Pellentesque non bibendum quam.
-Nullam consectetur vestibulum ligula, non molestie odio mattis vitae. Proin
-sapien nulla, sollicitudin quis fermentum non, luctus et dolor. Donec vel velit
-euismod, accumsan lacus vitae, varius justo. Duis in erat dolor. Maecenas non
-sapien a lacus posuere ultrices sit amet eget quam. Sed vel tellus risus.
-Suspendisse ac leo pharetra, dictum sem ac, malesuada mauris. Donec in eleifend
-mauris. Vestibulum eu rhoncus nibh.
-""".strip()
-
+# Layout
 root = Box(
     style=Style(
         layout=Style.Layout.Horizontal,
@@ -37,9 +16,7 @@ root = Box(
     children=(
         Box(
             children=(
-                Box(
-                    text=lipsum
-                ),
+                Box(),
                 Box(
                     style=Style(
                         height=3,
@@ -55,6 +32,20 @@ root = Box(
     ),
 )
 
-with Application(root=root) as app:
-    app.register('q', app.quit)
+# Logic
+app = Application(root=root)
+app.register('q', quit)
+
+
+@app.on('ready')
+def show_files(app):
+    ls = str(subprocess.check_output('ls'), 'utf-8')
+    if app.root.children[0].children[0].text != ls:
+        app.log("ls")
+        app.root.children[0].children[0].text = ls
+    app.loop.create_task(show_files(app))
+
+
+# Run
+with app:
     app.run()
