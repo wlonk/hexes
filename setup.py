@@ -12,6 +12,23 @@ except ImportError:
     )
 
 
+class NoVersionSet(Exception):
+    pass
+
+
+def parse_version():
+    import re
+    version = re.compile(r"^__version__\s*=\s*'([^']+)'")
+    with open('hexes/__init__.py') as f:
+        version_line = [
+            line.strip() for line in f.readlines()
+            if version.match(line)
+        ]
+    if not version_line:
+        raise NoVersionSet
+    return version.match(version_line[-1]).group(1)
+
+
 class PyTest(Command):
     user_options = []
 
@@ -57,7 +74,7 @@ test_requirements = [
 
 setup(
     name='hexes',
-    version='0.2.0',
+    version=parse_version(),
     description="Curses for humans.",
     long_description=readme + '\n\n' + history,
     author="Kit La Touche",
@@ -69,7 +86,7 @@ setup(
     package_dir={'hexes':
                  'hexes'},
     scripts=(
-        'scripts/try_hexes',
+        'scripts/hexes_example',
     ),
     include_package_data=True,
     install_requires=requirements,
