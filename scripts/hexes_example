@@ -45,8 +45,9 @@ root = Box(
 #
 # Instantiate the application with the layout attached.
 # Register any pre-defined behaviors you want (right now, that's only `quit`)
+# using the same mechanism as custom behaviors, `app.on`.
 app = Application(root=root)
-app.register('q', quit)
+app.on('q', quit)
 
 
 # Define custom behavior with the `@app.on` decorator. This decorator

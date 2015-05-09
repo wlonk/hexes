@@ -304,13 +304,15 @@ class Application(object):
         msg = " ".join(map(str, args))
         logging.info(msg)
 
-    def on(self, event):
+    def on(self, event, func=None):
         def decorator(fn):
             if not asyncio.iscoroutinefunction(fn):
                 fn = asyncio.coroutine(fn)
             self.register(event, fn)
             return fn
-        return decorator
+        if func is None:
+            return decorator
+        return decorator(func)
 
     def recalculate_windows(self):
         self.windows = []
