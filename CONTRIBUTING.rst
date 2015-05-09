@@ -99,6 +99,8 @@ Before you submit a pull request, check that it meets these guidelines:
    feature to the list in ``README.rst``.
 3. The pull request should work for Python 3.4. Check the tests on your pull
    request and make sure that the tests pass for all supported Python versions.
+4. Please include a cute animal picture with your pull request! Everyone will
+   have a happier time if you do.
 
 Tips
 ----
