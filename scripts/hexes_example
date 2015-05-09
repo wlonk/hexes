@@ -18,6 +18,7 @@ import subprocess
 # sizes. You can specify text for boxes, whether that text should be flowed or
 # treated as fixed, whether child boxes should be laid out horizontally or
 # vertically, height and width for boxes, etc.
+ls_box = Box()
 root = Box(
     style=Style(
         layout=Style.Layout.Horizontal,
@@ -25,7 +26,7 @@ root = Box(
     children=(
         Box(
             children=(
-                Box(),
+                ls_box,
                 Box(
                     style=Style(
                         height=3,
@@ -57,10 +58,8 @@ app.on('q', quit)
 def show_files(app):
     # For this example, we're just gonna output an `ls` of the local directory.
     ls = str(subprocess.check_output('ls'), 'utf-8')
-    # Obviously, how you identify and access boxes in a layout needs to be
-    # improved; this is horrible:
-    if app.root.children[0].children[0].text != ls:
-        app.root.children[0].children[0].text = ls
+    if ls_box.text != ls:
+        ls_box.text = ls
     # To run a task forever, you have to tell it to schedule itself again:
     app.schedule(show_files)
 
