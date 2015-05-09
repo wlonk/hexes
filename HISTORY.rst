@@ -3,6 +3,11 @@
 History
 -------
 
+0.3.1 (2015-05-08)
+---------------------
+
+* Slight unifications to the way you register behaviors.
+
 0.3.0 (2015-05-08)
 ---------------------
 
