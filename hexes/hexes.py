@@ -327,19 +327,22 @@ class Application(object):
 
     def run(self):
         self.loop.call_soon(self.process_key)
-        self.loop.create_task(render(self))
+        self.schedule(render)
         for handler in self._registry['ready']:
-            self.loop.create_task(handler(self))
+            self.schedule(handler)
         try:
             self.loop.run_forever()
         except:
             self.loop.close()
 
+    def schedule(self, coro_func):
+        self.loop.create_task(coro_func(self))
+
     def process_key(self):
         try:
             key = self.stdscr.getkey()
             for handler in self._registry[key]:
-                self.loop.create_task(handler(self))
+                self.schedule(handler)
         except curses.error:
             pass
         finally:

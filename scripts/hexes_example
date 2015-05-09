@@ -62,7 +62,7 @@ def show_files(app):
     if app.root.children[0].children[0].text != ls:
         app.root.children[0].children[0].text = ls
     # To run a task forever, you have to tell it to schedule itself again:
-    app.loop.create_task(show_files(app))
+    app.schedule(show_files)
 
 
 # Run
