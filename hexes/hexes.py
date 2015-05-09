@@ -45,15 +45,6 @@ class Box(object):
         children = children or []
         self.add_children(*children)
 
-    @property
-    def text(self):
-        return self._text
-
-    @text.setter
-    def text(self, val):
-        self._text = val
-        self.root.dirty = True
-
     def __str__(self):
         if self.title:
             return "Box: {}".format(self.title)
@@ -64,11 +55,19 @@ class Box(object):
             "Box(title={s.title!r}, style={s.style!r}, children=[...])"
         ).format(s=self)
 
+    def add_child(self, child):
+        child.parent = self
+        self.children.append(child)
+
+    def add_children(self, *children):
+        for child in children:
+            self.add_child(child)
+
     @property
-    def traverse_pre_order(self):
-        return [self] + [
-            x for x in flatten(c.traverse_pre_order for c in self.children)
-        ]
+    def ancestors(self):
+        if self.parent is not None:
+            return [self.parent] + self.parent.ancestors
+        return []
 
     @property
     def root(self):
@@ -79,96 +78,10 @@ class Box(object):
         return _helper(self)
 
     @property
-    def available_height(self):
-        if self._available_height is not None:
-            return self._available_height
-        if type(self.style.height) == int:
-            return self.style.height
-        if self.parent is not None:
-            inside_height = self.parent.available_height - 2
-            if self.parent.style.layout == Style.Layout.Horizontal:
-                return inside_height
-            if self.parent.style.layout == Style.Layout.Vertical:
-                inside_height -= sum([
-                    sib.style.height
-                    for sib in self.siblings_including_self
-                    if type(sib.style.height) == int
-                ])
-                auto_sibs = [
-                    sib
-                    for sib in self.siblings_including_self
-                    if sib.style.height == Style.Height.Auto
-                ]
-                return floor(inside_height / len(auto_sibs) + 1) - 1
-        return 2
-
-    @available_height.setter
-    def available_height(self, val):
-        self._available_height = val
-
-    @property
-    def available_width(self):
-        if self._available_width is not None:
-            return self._available_width
-        if type(self.style.width) == int:
-            return self.style.width
-        if self.parent is not None:
-            inside_width = self.parent.available_width - 2
-            if self.parent.style.layout == Style.Layout.Vertical:
-                return inside_width
-            if self.parent.style.layout == Style.Layout.Horizontal:
-                inside_width -= sum([
-                    sib.style.width
-                    for sib in self.siblings_including_self
-                    if type(sib.style.width) == int
-                ])
-                auto_sibs = [
-                    sib
-                    for sib in self.siblings_including_self
-                    if sib.style.width == Style.Width.Auto
-                ]
-                return floor(inside_width / len(auto_sibs) + 1) - 1
-        return 2
-
-    @available_width.setter
-    def available_width(self, val):
-        self._available_width = val
-
-    @property
-    def height(self):
-        if not self.children:
-            required_height = 2
-        required_height = sum(c.height for c in self.children) + 2
-        if self.style.height == Style.Height.Auto:
-            return self.available_height
-        if type(self.style.height) == int:
-            return self.style.height
-        return max(required_height, self.style.min_height)
-
-    @property
-    def inner_height(self):
-        return self.height - 2
-
-    @property
-    def width(self):
-        if not self.children:
-            required_width = 2
-        required_width = sum(c.width for c in self.children) + 2
-        if self.style.width == Style.Width.Auto:
-            return self.available_width
-        if type(self.style.width) == int:
-            return self.style.width
-        return max(required_width, self.style.min_width)
-
-    @property
-    def inner_width(self):
-        return self.width - 2
-
-    @property
-    def ancestors(self):
-        if self.parent is not None:
-            return [self.parent] + self.parent.ancestors
-        return []
+    def traverse_pre_order(self):
+        return [self] + [
+            x for x in flatten(c.traverse_pre_order for c in self.children)
+        ]
 
     @property
     def older_siblings(self):
@@ -190,6 +103,84 @@ class Box(object):
     @property
     def siblings_including_self(self):
         return self.older_siblings + [self] + self.younger_siblings
+
+    def available_dimension(self, main, cross):
+        if main == "height":
+            full_dimension = Style.Layout.Horizontal
+            divided_dimension = Style.Layout.Vertical
+            auto_dimension = Style.Height.Auto
+        elif main == "width":
+            full_dimension = Style.Layout.Vertical
+            divided_dimension = Style.Layout.Horizontal
+            auto_dimension = Style.Width.Auto
+
+        if getattr(self, '_available_{}'.format(main)) is not None:
+            return getattr(self, '_available_{}'.format(main))
+        if type(getattr(self.style, main)) == int:
+            return getattr(self.style, main)
+        if self.parent is not None:
+            inside_main = getattr(self.parent, 'available_{}'.format(main)) - 2
+            if self.parent.style.layout == full_dimension:
+                return inside_main
+            if self.parent.style.layout == divided_dimension:
+                inside_main -= sum([
+                    getattr(sib.style, main)
+                    for sib in self.siblings_including_self
+                    if type(getattr(sib.style, main)) == int
+                ])
+                auto_sibs = [
+                    sib
+                    for sib in self.siblings_including_self
+                    if getattr(sib.style, main) == auto_dimension
+                ]
+                return floor(inside_main / len(auto_sibs) + 1) - 1
+        return 2
+
+    @property
+    def available_height(self):
+        return self.available_dimension("height", "width")
+
+    @available_height.setter
+    def available_height(self, val):
+        self._available_height = val
+
+    @property
+    def available_width(self):
+        return self.available_dimension("width", "height")
+
+    @available_width.setter
+    def available_width(self, val):
+        self._available_width = val
+
+    def dimension(self, main, cross):
+        if main == "height":
+            auto_dimension = Style.Height.Auto
+        else:
+            auto_dimension = Style.Width.Auto
+        if not self.children:
+            required_main = 2
+        required_main = sum(getattr(c, main) for c in self.children) + 2
+        if getattr(self.style, main) == auto_dimension:
+            return getattr(self, "available_{}".format(main))
+        if type(getattr(self.style, main)) == int:
+            return getattr(self.style, main)
+        return max(required_main, getattr(self.style, "min_{}".format(main)))
+
+    @property
+    def height(self):
+        return self.dimension("height", "width")
+
+    @property
+    def inner_height(self):
+        return self.height - 2
+
+    @property
+    def width(self):
+        return self.dimension("width", "height")
+
+    @property
+    def inner_width(self):
+        return self.width - 2
 
     @property
     def upper_left(self):
@@ -220,13 +211,14 @@ class Box(object):
             y + self.height,
         )
 
-    def add_child(self, child):
-        child.parent = self
-        self.children.append(child)
+    @property
+    def text(self):
+        return self._text
 
-    def add_children(self, *children):
-        for child in children:
-            self.add_child(child)
+    @text.setter
+    def text(self, val):
+        self._text = val
+        self.root.dirty = True
 
 
 class Application(object):
