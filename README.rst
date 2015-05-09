@@ -28,6 +28,7 @@ Features
 
 * It can draw boxes, lay them out, and resize them. FANCY!
 * It can put text in boxes and only reveal the appropriate bits of it. SHINY!
+* It has an event loop, and allows you to bind to startup and keypresses. SPOOKY!
 
 .. |pypi| image:: https://img.shields.io/pypi/v/hexes.svg?style=plastic                
                 :target: https://pypi.python.org/pypi/hexes                                
