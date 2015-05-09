@@ -55,20 +55,19 @@ class Box(object):
             "Box(title={s.title!r}, style={s.style!r}, children=[...])"
         ).format(s=self)
 
-    @property
-    def text(self):
-        return self._text
+    def add_child(self, child):
+        child.parent = self
+        self.children.append(child)
 
-    @text.setter
-    def text(self, val):
-        self._text = val
-        self.root.dirty = True
+    def add_children(self, *children):
+        for child in children:
+            self.add_child(child)
 
     @property
-    def traverse_pre_order(self):
-        return [self] + [
-            x for x in flatten(c.traverse_pre_order for c in self.children)
-        ]
+    def ancestors(self):
+        if self.parent is not None:
+            return [self.parent] + self.parent.ancestors
+        return []
 
     @property
     def root(self):
@@ -77,6 +76,33 @@ class Box(object):
                 return node
             return _helper(node.parent)
         return _helper(self)
+
+    @property
+    def traverse_pre_order(self):
+        return [self] + [
+            x for x in flatten(c.traverse_pre_order for c in self.children)
+        ]
+
+    @property
+    def older_siblings(self):
+        if self.parent is None:
+            return []
+        return self.parent.children[:self.parent.children.index(self)]
+
+    @property
+    def younger_siblings(self):
+        if self.parent is None:
+            return []
+        # Plus one to exlude self.
+        return self.parent.children[self.parent.children.index(self) + 1:]
+
+    @property
+    def siblings(self):
+        return self.older_siblings + self.younger_siblings
+
+    @property
+    def siblings_including_self(self):
+        return self.older_siblings + [self] + self.younger_siblings
 
     def available_dimension(self, main, cross):
         if main == "height":
@@ -157,33 +183,6 @@ class Box(object):
         return self.width - 2
 
     @property
-    def ancestors(self):
-        if self.parent is not None:
-            return [self.parent] + self.parent.ancestors
-        return []
-
-    @property
-    def older_siblings(self):
-        if self.parent is None:
-            return []
-        return self.parent.children[:self.parent.children.index(self)]
-
-    @property
-    def younger_siblings(self):
-        if self.parent is None:
-            return []
-        # Plus one to exlude self.
-        return self.parent.children[self.parent.children.index(self) + 1:]
-
-    @property
-    def siblings(self):
-        return self.older_siblings + self.younger_siblings
-
-    @property
-    def siblings_including_self(self):
-        return self.older_siblings + [self] + self.younger_siblings
-
-    @property
     def upper_left(self):
         if self.parent is not None:
             x, y = self.parent.upper_left
@@ -212,13 +211,14 @@ class Box(object):
             y + self.height,
         )
 
-    def add_child(self, child):
-        child.parent = self
-        self.children.append(child)
+    @property
+    def text(self):
+        return self._text
 
-    def add_children(self, *children):
-        for child in children:
-            self.add_child(child)
+    @text.setter
+    def text(self, val):
+        self._text = val
+        self.root.dirty = True
 
 
 class Application(object):
