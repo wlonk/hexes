@@ -22,6 +22,7 @@ class Style(object):
     class Width:
         Auto = "auto"
 
+    border_collapse = True
     layout = Layout.Vertical
     min_height = 0
     height = Height.Auto
@@ -104,7 +105,7 @@ class Box(object):
     def siblings_including_self(self):
         return self.older_siblings + [self] + self.younger_siblings
 
-    def available_dimension(self, main, cross):
+    def available_dimension(self, main):
         if main == "height":
             full_dimension = Style.Layout.Horizontal
             divided_dimension = Style.Layout.Vertical
@@ -119,7 +120,15 @@ class Box(object):
         if type(getattr(self.style, main)) == int:
             return getattr(self.style, main)
         if self.parent is not None:
-            inside_main = getattr(self.parent, 'available_{}'.format(main)) - 2
+            if self.parent.style.border_collapse:
+                adjustment = 0
+                small_adjustment = 0
+            else:
+                adjustment = 2
+                small_adjustment = 1
+            inside_main = (
+                getattr(self.parent, 'available_{}'.format(main)) - adjustment
+            )
             if self.parent.style.layout == full_dimension:
                 return inside_main
             if self.parent.style.layout == divided_dimension:
@@ -133,12 +142,14 @@ class Box(object):
                     for sib in self.siblings_including_self
                     if getattr(sib.style, main) == auto_dimension
                 ]
-                return floor(inside_main / len(auto_sibs) + 1) - 1
+                return (
+                    floor(inside_main / len(auto_sibs) + 1) - small_adjustment
+                )
         return 2
 
     @property
     def available_height(self):
-        return self.available_dimension("height", "width")
+        return self.available_dimension("height")
 
     @available_height.setter
     def available_height(self, val):
@@ -146,20 +157,29 @@ class Box(object):
 
     @property
     def available_width(self):
-        return self.available_dimension("width", "height")
+        return self.available_dimension("width")
 
     @available_width.setter
     def available_width(self, val):
         self._available_width = val
 
-    def dimension(self, main, cross):
+    def dimension(self, main):
         if main == "height":
             auto_dimension = Style.Height.Auto
         else:
             auto_dimension = Style.Width.Auto
+
         if not self.children:
             required_main = 2
-        required_main = sum(getattr(c, main) for c in self.children) + 2
+
+        if self.parent and self.parent.style.border_collapse:
+            adjustment = 0
+        else:
+            adjustment = 2
+
+        required_main = (
+            sum(getattr(c, main) for c in self.children) + adjustment
+        )
         if getattr(self.style, main) == auto_dimension:
             return getattr(self, "available_{}".format(main))
         if type(getattr(self.style, main)) == int:
@@ -168,7 +188,7 @@ class Box(object):
 
     @property
     def height(self):
-        return self.dimension("height", "width")
+        return self.dimension("height")
 
     @property
     def inner_height(self):
@@ -176,7 +196,7 @@ class Box(object):
 
     @property
     def width(self):
-        return self.dimension("width", "height")
+        return self.dimension("width")
 
     @property
     def inner_width(self):
@@ -191,15 +211,25 @@ class Box(object):
             x, y = -1, -1
             layout = Style.layout
 
+        if self.older_siblings:
+            elder_x, elder_y = self.older_siblings[-1].lower_right
+        else:
+            elder_x, elder_y = x, y
+
+        if self.parent and self.parent.style.border_collapse:
+            adjustment = 0
+        else:
+            adjustment = 1
+
         if layout == Style.Layout.Horizontal:
             point = Point(
-                sum(os.width for os in self.older_siblings) + x + 1,
-                y + 1,
+                elder_x + adjustment - bool(self.older_siblings),
+                y + adjustment,
             )
         else:
             point = Point(
-                x + 1,
-                sum(os.height for os in self.older_siblings) + y + 1,
+                x + adjustment,
+                elder_y + adjustment - bool(self.older_siblings),
             )
         return point
 
@@ -260,12 +290,8 @@ class Application(object):
         x, y = box.upper_left
 
         if box.parent is not None:
-            if box.parent.style.layout == Style.Layout.Horizontal:
-                columns = box.width
-                lines = box.parent.height - 2
-            else:
-                columns = box.parent.width - 2
-                lines = box.height
+            columns = box.width
+            lines = box.height
         else:
             columns = win_x
             lines = win_y
