@@ -10,6 +10,38 @@ from hexes import (
 def tree():
     box = Box(
         title="Root",
+        style=Style(
+            border_collapse=False
+        ),
+        children=(
+            Box(
+                title="A",
+                style=Style(
+                    border_collapse=False
+                ),
+                children=(
+                    Box(
+                        title="AA",
+                    ),
+                    Box(
+                        title="AB",
+                    ),
+                ),
+            ),
+            Box(
+                title="B",
+            ),
+        ),
+    )
+    box.available_height = 100
+    box.available_width = 100
+    return box
+
+
+@pytest.fixture
+def border_collapse_tree():
+    box = Box(
+        title="Root",
         children=(
             Box(
                 title="A",
@@ -49,9 +81,20 @@ def test_available_height(tree):
     assert tree.children[0].available_height == 49
     assert tree.children[1].available_height == 49
     # 23 is the 49 of the parent, minus 2 of borders, divide by 2 (round down)
-    # for the number of children
+    # for the number of children.
     assert tree.children[0].children[0].available_height == 23
     assert tree.children[0].children[1].available_height == 23
+
+
+def test_available_height_border_collapse(border_collapse_tree):
+    # 50 is the 100 of the root, divide by 2 for the number of children, plus
+    # one for the shared border.
+    assert border_collapse_tree.children[0].available_height == 51
+    assert border_collapse_tree.children[1].available_height == 51
+    # 25 is the 50 of the parent, divide by 2 (round down) for the number of
+    # children, plus one for the shared border.
+    assert border_collapse_tree.children[0].children[0].available_height == 26
+    assert border_collapse_tree.children[0].children[1].available_height == 26
 
 
 def test_available_width(tree):
@@ -64,6 +107,15 @@ def test_available_width(tree):
     assert tree.children[0].children[1].available_width == 96
 
 
+def test_available_width_border_collapse(border_collapse_tree):
+    # 100 is full width.
+    assert border_collapse_tree.children[0].available_width == 100
+    assert border_collapse_tree.children[1].available_width == 100
+    # 100 is full width.
+    assert border_collapse_tree.children[0].children[0].available_width == 100
+    assert border_collapse_tree.children[0].children[1].available_width == 100
+
+
 def test_available_width_with_horizontal_layout(tree):
     tree.children[0].style.layout = Style.Layout.Horizontal
 
@@ -73,6 +125,17 @@ def test_available_width_with_horizontal_layout(tree):
     # 96 (parent inner width) / 2 for siblings - 2 for borders
     assert tree.children[0].children[0].available_width == 48
     assert tree.children[0].children[1].available_width == 48
+
+
+def test_available_width_with_horizontal_layout_border_collapse(border_collapse_tree):  # NOQA
+    border_collapse_tree.children[0].style.layout = Style.Layout.Horizontal
+
+    # 100 is full width.
+    assert border_collapse_tree.children[0].available_width == 100
+    assert border_collapse_tree.children[1].available_width == 100
+    # 51 is full width / 2 + 1 for shared border.
+    assert border_collapse_tree.children[0].children[0].available_width == 51
+    assert border_collapse_tree.children[0].children[1].available_width == 51
 
 
 def test_ancestors(tree):
