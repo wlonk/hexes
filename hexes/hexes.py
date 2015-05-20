@@ -1,3 +1,11 @@
+"""
+This module contains the core concepts of Hexes:
+
+    :class: Style
+    :class: Box
+    :class: Application
+"""
+
 import asyncio
 import curses
 import logging
@@ -13,6 +21,26 @@ from .behaviors import render
 
 
 class Style(object):
+    """
+    An object defining styles for a box.
+
+    :Arguments:
+
+    :border_collapse: `Boolean` indicating whether child boxes should collapse
+        adjacent borders into one, or not. Default: `True`.
+
+    :layout: `Layout.Vertical` or `Layout.Horizontal`, indicating whether to
+        arrange child boxes in rows or columns. Default: `Layout.Horizontal`.
+
+    :height: `int` or `Height.Auto`. Height in character cells, or "fit to
+        available space".
+
+    :width: `int` or `Width.Auto`. Width in character cells, or "fit to
+        available space".
+
+    :flow: `Boolean` indicating whether text in the box should be reflowed to
+        fit, or printed literally. Default: `False`.
+    """
     class Layout:
         Vertical = "vertical"
         Horizontal = "horizontal"
@@ -36,6 +64,9 @@ class Style(object):
 
 
 class Box(object):
+    """
+    Box
+    """
     def __init__(self,
                  title=None,
                  style=None,
@@ -65,21 +96,37 @@ class Box(object):
         ).format(s=self)
 
     def add_child(self, child):
+        """
+        add_child
+        """
+
         child.parent = self
         self.children.append(child)
 
     def add_children(self, *children):
+        """
+        add_children
+        """
+
         for child in children:
             self.add_child(child)
 
     @property
     def ancestors(self):
+        """
+        ancestors
+        """
+
         if self.parent is not None:
             return [self.parent] + self.parent.ancestors
         return []
 
     @property
     def root(self):
+        """
+        root
+        """
+
         def _helper(node):
             if node.parent is None:
                 return node
@@ -88,18 +135,30 @@ class Box(object):
 
     @property
     def traverse_pre_order(self):
+        """
+        traverse_pre_order
+        """
+
         return [self] + [
             x for x in flatten(c.traverse_pre_order for c in self.children)
         ]
 
     @property
     def older_siblings(self):
+        """
+        older_siblings
+        """
+
         if self.parent is None:
             return []
         return self.parent.children[:self.parent.children.index(self)]
 
     @property
     def younger_siblings(self):
+        """
+        younger_siblings
+        """
+
         if self.parent is None:
             return []
         # Plus one to exlude self.
@@ -107,13 +166,21 @@ class Box(object):
 
     @property
     def siblings(self):
+        """
+        siblings
+        """
+
         return self.older_siblings + self.younger_siblings
 
     @property
     def siblings_including_self(self):
+        """
+        siblings_including_self
+        """
+
         return self.older_siblings + [self] + self.younger_siblings
 
-    def available_dimension(self, main):
+    def __available_dimension(self, main):
         if main == "height":
             full_dimension = Style.Layout.Horizontal
             divided_dimension = Style.Layout.Vertical
@@ -157,7 +224,11 @@ class Box(object):
 
     @property
     def available_height(self):
-        return self.available_dimension("height")
+        """
+        available_height
+        """
+
+        return self.__available_dimension("height")
 
     @available_height.setter
     def available_height(self, val):
@@ -165,13 +236,17 @@ class Box(object):
 
     @property
     def available_width(self):
-        return self.available_dimension("width")
+        """
+        available_width
+        """
+
+        return self.__available_dimension("width")
 
     @available_width.setter
     def available_width(self, val):
         self._available_width = val
 
-    def dimension(self, main):
+    def __dimension(self, main):
         if main == "height":
             auto_dimension = Style.Height.Auto
         else:
@@ -196,22 +271,42 @@ class Box(object):
 
     @property
     def height(self):
-        return self.dimension("height")
+        """
+        height
+        """
+
+        return self.__dimension("height")
 
     @property
     def inner_height(self):
+        """
+        inner_height
+        """
+
         return self.height - 2
 
     @property
     def width(self):
-        return self.dimension("width")
+        """
+        width
+        """
+
+        return self.__dimension("width")
 
     @property
     def inner_width(self):
+        """
+        inner_width
+        """
+
         return self.width - 2
 
     @property
     def upper_left(self):
+        """
+        The location of the upper left corner of the box, when rendered.
+        """
+
         if self.parent is not None:
             x, y = self.parent.upper_left
             layout = self.parent.style.layout
@@ -243,6 +338,10 @@ class Box(object):
 
     @property
     def lower_right(self):
+        """
+        The location of the lower right corner of the box, when rendered.
+        """
+
         x, y = self.upper_left
         return Point(
             x + self.width,
@@ -251,6 +350,10 @@ class Box(object):
 
     @property
     def text(self):
+        """
+        text
+        """
+
         return self._text
 
     @text.setter
@@ -267,6 +370,10 @@ class Box(object):
 
 
 class Application(object):
+    """
+    Application
+    """
+
     def __init__(self, root=None):
         self.stdscr = curses.initscr()
         self._registry = defaultdict(list)
@@ -301,6 +408,10 @@ class Application(object):
         curses.endwin()
 
     def add_window(self, box):
+        """
+        add_window
+        """
+
         win_x, win_y = self.get_window_size()
         x, y = box.upper_left
 
@@ -337,6 +448,10 @@ class Application(object):
         self.windows.append((box, win, pad, textbox))
 
     def add_windows(self, *boxes):
+        """
+        add_windows
+        """
+
         for box in boxes:
             self.add_window(box)
 
@@ -349,6 +464,10 @@ class Application(object):
         textbox.edit(callback=callback)
 
     def get_window_size(self):
+        """
+        get_window_size
+        """
+
         y, x = self.stdscr.getmaxyx()
         return Point(x, y)
 
@@ -360,10 +479,18 @@ class Application(object):
         )
 
     def log(self, *args):
+        """
+        log
+        """
+
         msg = " ".join(map(str, args))
         logging.info(msg)
 
     def on(self, event, func=None):
+        """
+        Fancy feast
+        """
+
         def decorator(fn):
             if not asyncio.iscoroutinefunction(fn):
                 fn = asyncio.coroutine(fn)
@@ -374,6 +501,10 @@ class Application(object):
         return decorator(func)
 
     def recalculate_windows(self):
+        """
+        recalculate_windows
+        """
+
         self.windows = []
         x, y = self.get_window_size()
         self.root.available_height = y
@@ -381,10 +512,18 @@ class Application(object):
         self.add_windows(*self.root.traverse_pre_order)
 
     def register(self, event_id, fn):
+        """
+        register
+        """
+
         self._registry[event_id].append(fn)
         self.log("Run {} on {}".format(fn.__name__, event_id))
 
     def run(self):
+        """
+        run
+        """
+
         self.loop.call_soon(self.process_key)
         self.schedule(render)
         for handler in self._registry['ready']:
@@ -395,9 +534,17 @@ class Application(object):
             self.loop.close()
 
     def schedule(self, coro_func):
+        """
+        schedule
+        """
+
         self.loop.create_task(coro_func(self))
 
     def process_key(self):
+        """
+        process_key
+        """
+
         try:
             if self.has_active_textbox:
                 pass

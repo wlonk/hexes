@@ -4,6 +4,13 @@ from functools import partial
 
 @asyncio.coroutine
 def render(app):
+    """
+    The core rendering loop.
+
+    Do not schedule this with ``app.on``; it is scheduled automatically when
+    you start the application.
+    """
+
     if app.root.dirty:
         app.log("Rendering")
         app.stdscr.refresh()
@@ -22,6 +29,18 @@ def render(app):
 
 @asyncio.coroutine
 def quit(app):
+    """
+    Basic quitting behavior.
+
+    Typically, you'll want to schedule this with:
+
+    .. code-block:: python
+
+        app.on('q', quit)
+
+    or something similar.
+    """
+
     app.loop.stop()
 
 

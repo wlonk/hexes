@@ -16,6 +16,10 @@ stringlike = (str, bytes)
 
 
 def flatten(container):
+    """
+    A generator that flattens an iterable one level.
+    """
+
     for i in container:
         if isinstance(i, Iterable) and not isinstance(i, stringlike):
             for j in flatten(i):
@@ -25,6 +29,11 @@ def flatten(container):
 
 
 def wrap_by_paragraph(text, width=70, **kwargs):
+    """
+    Takes a string and hard-wraps it to the specified width, preserving
+    double-linebreaks to preserve paragraphs.
+    """
+
     paragraphs = text.split('\n\n')
     return '\n\n'.join(
         '\n'.join(wrap(paragraph, width=width, **kwargs))
