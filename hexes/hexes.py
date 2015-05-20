@@ -3,6 +3,7 @@ import curses
 import logging
 from collections import defaultdict
 from math import floor
+from .aiotextpad import AsyncTextbox
 from .utils import (
     Point,
     flatten,
@@ -35,9 +36,15 @@ class Style(object):
 
 
 class Box(object):
-    def __init__(self, title=None, style=None, text=None, children=None):
+    def __init__(self,
+                 title=None,
+                 style=None,
+                 text=None,
+                 editable=False,
+                 children=None):
         self.title = title
         self.style = style or Style()
+        self.editable = editable
         self.parent = None
         self._text = text
         self._text_offset = 0
@@ -305,26 +312,52 @@ class Application(object):
             lines = win_y
 
         win = curses.newwin(lines, columns, y, x)
-        # Attach a pad to the window, to allow text overflow.
         pad = curses.newpad(box.inner_width, 1000)
         win.border()
+
         if box.title:
             win.addstr(0, 1, box.title)
+
         if box.text:
             if box.style.flow:
                 text = wrap_by_paragraph(box.text, width=box.inner_width)
             else:
                 text = box.text
             pad.addstr(0, 0, text)
-        self.windows.append((box, win, pad))
+
+        if box.editable:
+            # We want to attach the textbox to the pad, not the window, because
+            # the window has a border, and that means we capture the
+            # box-drawing characters, and write on the border. UGLY.
+            textbox = AsyncTextbox(pad, box, self)
+        else:
+            textbox = None
+
+        # This should probably be a namedtuple
+        self.windows.append((box, win, pad, textbox))
 
     def add_windows(self, *boxes):
         for box in boxes:
             self.add_window(box)
 
+    def edit(self, box, callback=None):
+        try:
+            textbox = list(filter(lambda x: x[0] == box, self.windows))[0][3]
+        except IndexError:
+            return None
+        self.log('editing')
+        textbox.edit(callback=callback)
+
     def get_window_size(self):
         y, x = self.stdscr.getmaxyx()
         return Point(x, y)
+
+    @property
+    def has_active_textbox(self):
+        return any(
+            getattr(textbox, 'is_active', False)
+            for _, _, _, textbox in self.windows
+        )
 
     def log(self, *args):
         msg = " ".join(map(str, args))
@@ -366,9 +399,12 @@ class Application(object):
 
     def process_key(self):
         try:
-            key = self.stdscr.getkey()
-            for handler in self._registry[key]:
-                self.schedule(handler)
+            if self.has_active_textbox:
+                pass
+            else:
+                key = self.stdscr.getkey()
+                for handler in self._registry[key]:
+                    self.schedule(handler)
         except curses.error:
             pass
         finally:

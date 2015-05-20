@@ -7,10 +7,15 @@ from hexes import (
     Style,
 )
 from hexes.behaviors import quit
+import logging
+
+logging.basicConfig(
+    filename='hexes.log',
+    level=logging.DEBUG,
+)
 
 # We're going to use this in the logic below; not part of Hexes.
-import subprocess
-
+import asyncio
 
 # Layout
 #
@@ -18,7 +23,18 @@ import subprocess
 # sizes. You can specify text for boxes, whether that text should be flowed or
 # treated as fixed, whether child boxes should be laid out horizontally or
 # vertically, height and width for boxes, etc.
-ls_box = Box()
+ls_box = Box(
+    style=Style(
+        flow=False,
+    ),
+)
+input_box = Box(
+    editable=True,
+    style=Style(
+        height=3,
+    ),
+)
+
 root = Box(
     style=Style(
         layout=Style.Layout.Horizontal,
@@ -27,11 +43,7 @@ root = Box(
         Box(
             children=(
                 ls_box,
-                Box(
-                    style=Style(
-                        height=3,
-                    ),
-                ),
+                input_box,
             ),
         ),
         Box(
@@ -55,13 +67,16 @@ app.on('q', quit)
 # requires an event identifier, which is either 'ready' or a key identifier
 # as returned by `curses.window.getkey`
 @app.on('ready')
-def show_files(app):
-    # For this example, we're just gonna output an `ls` of the local directory.
-    ls = str(subprocess.check_output('ls'), 'utf-8')
-    if ls_box.text != ls:
-        ls_box.text = ls
-    # To run a task forever, you have to tell it to schedule itself again:
-    app.schedule(show_files)
+def input_text(app):
+    app.edit(input_box, callback=handle_edit)
+
+
+@asyncio.coroutine
+def handle_edit(app, textbox, characters):
+    if ls_box.text is None:
+        ls_box.text = ""
+    ls_box.text += characters + "\n"
+    app.schedule(input_text)
 
 
 @app.on('j')
