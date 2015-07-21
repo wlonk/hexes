@@ -112,15 +112,16 @@ class AsyncTextbox(curses.textpad.Textbox):
 
     def leftward_key(self, ch, x, y):
         if x > 0:
-            self.win.move(y, x-1)
+            self.win.move(y, x - 1)
         elif y == 0:
             pass
         elif self.stripspaces:
-            self.win.move(y-1, self._end_of_line(y-1))
+            self.win.move(y - 1, self._end_of_line(y - 1))
         else:
-            self.win.move(y-1, self.maxx)
+            self.win.move(y - 1, self.maxx)
         if ch in (curses.ascii.BS, curses.KEY_BACKSPACE):
-            self.win.delch()
+            self.characters = self.characters[:-1]
+        return True
 
     def do_printable_char(self, ch, x, y):
         if y < self.maxy or x < self.maxx:
@@ -129,11 +130,7 @@ class AsyncTextbox(curses.textpad.Textbox):
 
     def _insert_printable_char(self, ch):
         # @TODO This doesn't do all the things of the super that it should.
-        # We need to update the text attribute on the box, otherwise the render
-        # behavior will just overwrite what we do.
-        if self.box.text is None:
-            self.box.text = ""
-        self.box.text += chr(ch)
+        self.characters += chr(ch)
 
     def do_command(self, ch):
         "Process a single editing command."

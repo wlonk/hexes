@@ -41,7 +41,7 @@ def _edit(app, textbox, validate, callback):
             )
             app.schedule(task)
     else:
-        textbox.characters += chr(ch)
+        textbox.box.text = textbox.characters
         app.schedule(
             partial(
                 _edit,
