@@ -64,6 +64,15 @@ def show_files(app):
     app.schedule(show_files)
 
 
+@app.on('j')
+def scroll_down(app):
+    ls_box.scroll(1)
+
+
+@app.on('k')
+def scroll_up(app):
+    ls_box.scroll(-1)
+
 # Run
 #
 # The context manager helps us clean up no matter what exceptional exit

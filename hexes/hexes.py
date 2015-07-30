@@ -40,6 +40,7 @@ class Box(object):
         self.style = style or Style()
         self.parent = None
         self._text = text
+        self._text_offset = 0
         self._available_height = None
         self._available_width = None
         self.children = []
@@ -248,6 +249,13 @@ class Box(object):
     @text.setter
     def text(self, val):
         self._text = val
+        self.root.dirty = True
+
+    def scroll(self, amount=1):
+        num_lines = self.text.count("\n")
+        self._text_offset += amount
+        self._text_offset = max(0, self._text_offset)
+        self._text_offset = min(num_lines - 1, self._text_offset)
         self.root.dirty = True
 
 
