@@ -40,6 +40,7 @@ class Box(object):
         self.style = style or Style()
         self.parent = None
         self._text = text
+        self._text_offset = 0
         self._available_height = None
         self._available_width = None
         self.children = []

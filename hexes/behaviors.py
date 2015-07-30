@@ -11,7 +11,7 @@ def render(app):
             win.refresh()
             x, y = box.upper_left
             dx, dy = box.lower_right
-            pad.refresh(0, 0, y + 1, x + 1, dy - 2, dx - 2)
+            pad.refresh(box._text_offset, 0, y + 1, x + 1, dy - 2, dx - 2)
         app.root.dirty = False
     # I'd love the idea of "repeat this indefinitely" to be expressed in the
     # decorator used, but that might deny the ability to key it off particular
