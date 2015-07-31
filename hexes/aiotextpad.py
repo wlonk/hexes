@@ -42,7 +42,25 @@ class AsyncTextbox(curses.textpad.Textbox):
         self.lastcmd = None
         self.is_active = False
         self.characters = ""
+        self._cursor = 0
         self.win.keypad(1)
+
+    @property
+    def cursor(self):
+        return self._cursor
+
+    @cursor.setter
+    def cursor(self, val):
+        self._cursor = self.bounded(val, 0, len(self.characters))
+
+    @staticmethod
+    def bounded(val, min_, max_):
+        # @TODO unit tests for this.
+        assert min_ < max_
+        return min(
+            max_,
+            max(min_, val)
+        )
 
     def edit(self, validate=None, callback=None):
         self.is_active = True
@@ -68,12 +86,8 @@ class AsyncTextbox(curses.textpad.Textbox):
             self.win.move(y, self.maxx)
 
     def ctrl_f(self, ch, x, y):
-        if x < self.maxx:
-            self.win.move(y, x + 1)
-        elif y == self.maxy:
-            pass
-        else:
-            self.win.move(y + 1, 0)
+        self.cursor += 1
+        return True
 
     def ctrl_g(self, ch, x, y):
         return 0
@@ -111,8 +125,9 @@ class AsyncTextbox(curses.textpad.Textbox):
                 self.win.move(y - 1, self._end_of_line(y - 1))
 
     def leftward_key(self, ch, x, y):
-        if x > 0:
-            self.win.move(y, x - 1)
+        if self.cursor > 0:
+            self.cursor -= 1
+            self.win.move(y, self.cursor)
         elif y == 0:
             pass
         elif self.stripspaces:
@@ -120,7 +135,10 @@ class AsyncTextbox(curses.textpad.Textbox):
         else:
             self.win.move(y - 1, self.maxx)
         if ch in (curses.ascii.BS, curses.KEY_BACKSPACE):
-            self.characters = self.characters[:-1]
+            self.characters = (
+                self.characters[:self.cursor]
+                + self.characters[self.cursor + 1:]
+            )
         return True
 
     def do_printable_char(self, ch, x, y):
@@ -130,7 +148,29 @@ class AsyncTextbox(curses.textpad.Textbox):
 
     def _insert_printable_char(self, ch):
         # @TODO This doesn't do all the things of the super that it should.
-        self.characters += chr(ch)
+        ch = chr(ch)
+        self.characters = (
+            self.characters[:self.cursor] + ch + self.characters[self.cursor:]
+        )
+        self.cursor += 1
+
+        # Super:
+        # (y, x) = self.win.getyx()
+        # if y < self.maxy or x < self.maxx:
+        #     if self.insert_mode:
+        #         oldch = self.win.inch()
+        #     # The try-catch ignores the error we trigger from some curses
+        #     # versions by trying to write into the lowest-rightmost spot
+        #     # in the window.
+        #     try:
+        #         self.win.addch(ch)
+        #     except curses.error:
+        #         pass
+        #     if self.insert_mode:
+        #         (backy, backx) = self.win.getyx()
+        #         if curses.ascii.isprint(oldch):
+        #             self._insert_printable_char(oldch)
+        #             self.win.move(backy, backx)
 
     def do_command(self, ch):
         "Process a single editing command."
