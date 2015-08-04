@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
 try:
     from setuptools import (
         Command,
@@ -11,22 +12,15 @@ except ImportError:
         setup,
     )
 
-
-class NoVersionSet(Exception):
+try:
+    from semantic_release import setup_hook
+    setup_hook(sys.argv)
+except ImportError:
     pass
 
 
-def parse_version():
-    import re
-    version = re.compile(r"^__version__\s*=\s*'([^']+)'")
-    with open('hexes/__init__.py') as f:
-        version_line = [
-            line.strip() for line in f.readlines()
-            if version.match(line)
-        ]
-    if not version_line:
-        raise NoVersionSet
-    return version.match(version_line[-1]).group(1)
+class NoVersionSet(Exception):
+    pass
 
 
 class PyTest(Command):
@@ -40,7 +34,6 @@ class PyTest(Command):
 
     def run(self):
         import pexpect
-        import sys
         print(
             "To see output, run tests via py.test directly. "
             "This will fail on a headless setup."
@@ -74,7 +67,6 @@ test_requirements = [
 
 setup(
     name='hexes',
-    version=parse_version(),
     description="Curses for humans.",
     long_description=readme + '\n\n' + history,
     author="Kit La Touche",

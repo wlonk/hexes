@@ -10,3 +10,4 @@ py==1.4.26
 pyflakes==0.8.1
 pytest==2.7.0
 wheel==0.24.0
+python-semantic-release==1.0.0
