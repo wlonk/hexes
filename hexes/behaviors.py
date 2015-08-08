@@ -1,4 +1,5 @@
 import asyncio
+from functools import partial
 
 
 @asyncio.coroutine
@@ -7,7 +8,7 @@ def render(app):
         app.log("Rendering")
         app.stdscr.refresh()
         app.recalculate_windows()
-        for box, win, pad in app.windows:
+        for box, win, pad, textbox in app.windows:
             win.refresh()
             x, y = box.upper_left
             dx, dy = box.lower_right
@@ -16,9 +17,36 @@ def render(app):
     # I'd love the idea of "repeat this indefinitely" to be expressed in the
     # decorator used, but that might deny the ability to key it off particular
     # logic?
-    app.loop.create_task(render(app))
+    app.schedule(render)
 
 
 @asyncio.coroutine
 def quit(app):
     app.loop.stop()
+
+
+@asyncio.coroutine
+def _edit(app, textbox, validate, callback):
+    ch = textbox.win.getch()
+    if validate:
+        ch = validate(ch)
+    if not textbox.do_command(ch):
+        textbox.is_active = False
+        textbox.box.text = ''
+        if callable(callback):
+            task = partial(
+                callback,
+                textbox=textbox,
+                characters=textbox.characters,
+            )
+            app.schedule(task)
+    else:
+        textbox.box.text = textbox.characters
+        app.schedule(
+            partial(
+                _edit,
+                textbox=textbox,
+                validate=validate,
+                callback=callback,
+            )
+        )
