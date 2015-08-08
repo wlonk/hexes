@@ -2,7 +2,7 @@
 
 __author__ = 'Kit La Touche'
 __email__ = 'kit@transneptune.net'
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 
 
 from .hexes import (
