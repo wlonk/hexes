@@ -67,6 +67,7 @@ test_requirements = [
 
 setup(
     name='hexes',
+    version='0.3.1',
     description="Curses for humans.",
     long_description=readme + '\n\n' + history,
     author="Kit La Touche",

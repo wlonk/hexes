@@ -4,6 +4,14 @@ hexes package
 Submodules
 ----------
 
+hexes.aiotextpad module
+-----------------------
+
+.. automodule:: hexes.aiotextpad
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hexes.behaviors module
 ----------------------
 

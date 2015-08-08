@@ -8,6 +8,8 @@ To use Hexes in a project:
     :code: python
 
 
+The text input area is still larval. Give me bug reports!
+
 ---------------------
 Musings on the future
 ---------------------
