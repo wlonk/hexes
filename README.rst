@@ -16,7 +16,7 @@ Hexes
 | Read the Docs | |readthedocs|    |
 +---------------+------------------+
 
-Curses for humans.
+Curses for "humans".
 
 This is free software, under a BSD license.
 
