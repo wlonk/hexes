@@ -1,9 +1,9 @@
 """
 This module contains the core concepts of Hexes:
 
-    :class: Style
-    :class: Box
-    :class: Application
+* :py:class:`.Style`
+* :py:class:`.Box`
+* :py:class:`.Application`
 """
 
 import asyncio
@@ -24,22 +24,21 @@ class Style(object):
     """
     An object defining styles for a box.
 
-    :Arguments:
-
-    :border_collapse: `Boolean` indicating whether child boxes should collapse
-        adjacent borders into one, or not. Default: `True`.
-
-    :layout: `Layout.Vertical` or `Layout.Horizontal`, indicating whether to
-        arrange child boxes in rows or columns. Default: `Layout.Horizontal`.
-
-    :height: `int` or `Height.Auto`. Height in character cells, or "fit to
-        available space".
-
-    :width: `int` or `Width.Auto`. Width in character cells, or "fit to
-        available space".
-
-    :flow: `Boolean` indicating whether text in the box should be reflowed to
-        fit, or printed literally. Default: `False`.
+    Keyword Arguments
+    -----------------
+    border_collapse : bool
+        Whether child boxes should collapse adjacent borders into one, or not.
+        Default: `True`.
+    layout : Layout.Vertical or Layout.Horizontal
+        Indicating whether to arrange child boxes in rows or columns.
+        Default: `Layout.Horizontal`.
+    height : int or Height.Auto
+        Height in character cells, or "fit to available space".
+    width : int or Width.Auto
+        Width in character cells, or "fit to available space".
+    flow : bool
+        Indicating whether text in the box should be reflowed to fit, or
+        printed literally. Default: `False`.
     """
     class Layout:
         Vertical = "vertical"
@@ -65,7 +64,22 @@ class Style(object):
 
 class Box(object):
     """
-    Box
+    An area drawn on the screen.
+
+    Keyword Arguments
+    -----------------
+    title : str
+        A short string shown in the upper left of the box.
+    style : :py:class:`.Style`
+        A bundle of style information.
+    text : str
+        The text to display in the box. It is auto-wrapped, and vertical
+        scrolling is handled.
+    editable : bool
+        Whether the user can change the text in the box.
+    children : list of :py:class:`.Box`
+        A list of child boxes, to be laid out according to the `style`
+        attribute.
     """
     def __init__(self,
                  title=None,
@@ -97,24 +111,30 @@ class Box(object):
 
     def add_child(self, child):
         """
-        add_child
+        Arguments
+        ---------
+        child : :py:class:`.Box`
+            The box to append.
         """
-
         child.parent = self
         self.children.append(child)
 
     def add_children(self, *children):
         """
-        add_children
+        Arguments
+        ---------
+        children : list of :py:class:`.Box`
+            The boxes to append.
         """
-
         for child in children:
             self.add_child(child)
 
     @property
     def ancestors(self):
         """
-        ancestors
+        :returns: All the parent boxes, starting with the immediate parent, and
+            ending with the root.
+        :rtype: list of :py:class:`.Box`
         """
 
         if self.parent is not None:
@@ -124,9 +144,9 @@ class Box(object):
     @property
     def root(self):
         """
-        root
+        :returns: The root box of the entire layout.
+        :rtype: :py:class:`.Box`
         """
-
         def _helper(node):
             if node.parent is None:
                 return node
@@ -136,7 +156,8 @@ class Box(object):
     @property
     def traverse_pre_order(self):
         """
-        traverse_pre_order
+        :returns: All boxes rooted at the current box, in pre-order.
+        :rtype: list of :py:class:`.Box`
         """
 
         return [self] + [
@@ -146,7 +167,9 @@ class Box(object):
     @property
     def older_siblings(self):
         """
-        older_siblings
+        :returns: All boxes that are children of the same parent, and earlier
+            in that parent's children list than self.
+        :rtype: list of :py:class:`.Box`
         """
 
         if self.parent is None:
@@ -156,7 +179,9 @@ class Box(object):
     @property
     def younger_siblings(self):
         """
-        younger_siblings
+        :returns: All boxes that are children of the same parent, and later in
+            that parent's children list than self.
+        :rtype: list of :py:class:`.Box`
         """
 
         if self.parent is None:
@@ -167,7 +192,8 @@ class Box(object):
     @property
     def siblings(self):
         """
-        siblings
+        :returns: All boxes that are children of the same parent, minus self.
+        :rtype: list of :py:class:`.Box`
         """
 
         return self.older_siblings + self.younger_siblings
@@ -175,7 +201,9 @@ class Box(object):
     @property
     def siblings_including_self(self):
         """
-        siblings_including_self
+        :returns: All boxes that are children of the same parent, inclusive of
+            self.
+        :rtype: list of :py:class:`.Box`
         """
 
         return self.older_siblings + [self] + self.younger_siblings
@@ -225,7 +253,11 @@ class Box(object):
     @property
     def available_height(self):
         """
-        available_height
+        Returns
+        -------
+        int
+            The number of rows inside the parent box, accounting for the
+            `border_collapse` setting.
         """
 
         return self.__available_dimension("height")
@@ -237,7 +269,11 @@ class Box(object):
     @property
     def available_width(self):
         """
-        available_width
+        Returns
+        -------
+        int
+            The number of columns inside the parent box, accounting for the
+            `border_collapse` setting.
         """
 
         return self.__available_dimension("width")
@@ -272,7 +308,10 @@ class Box(object):
     @property
     def height(self):
         """
-        height
+        Returns
+        -------
+        int
+            Actual number of rows in the box, including any border.
         """
 
         return self.__dimension("height")
@@ -280,7 +319,10 @@ class Box(object):
     @property
     def inner_height(self):
         """
-        inner_height
+        Returns
+        -------
+        int
+            Actual number of rows in the box, excluding any border.
         """
 
         return self.height - 2
@@ -288,7 +330,10 @@ class Box(object):
     @property
     def width(self):
         """
-        width
+        Returns
+        -------
+        int
+            Actual number of columns in the box, including any border.
         """
 
         return self.__dimension("width")
@@ -296,7 +341,10 @@ class Box(object):
     @property
     def inner_width(self):
         """
-        inner_width
+        Returns
+        -------
+        int
+            Actual number of columns in the box, excluding any border.
         """
 
         return self.width - 2
@@ -304,7 +352,10 @@ class Box(object):
     @property
     def upper_left(self):
         """
-        The location of the upper left corner of the box, when rendered.
+        Returns
+        -------
+        int
+            The location of the upper left corner of the box, when rendered.
         """
 
         if self.parent is not None:
@@ -339,7 +390,10 @@ class Box(object):
     @property
     def lower_right(self):
         """
-        The location of the lower right corner of the box, when rendered.
+        Returns
+        -------
+        int
+            The location of the lower right corner of the box, when rendered.
         """
 
         x, y = self.upper_left
@@ -351,7 +405,10 @@ class Box(object):
     @property
     def text(self):
         """
-        text
+        Returns
+        -------
+        str
+            The inner text of the box. This may change if the box is editable.
         """
 
         return self._text
@@ -362,6 +419,14 @@ class Box(object):
         self.root.dirty = True
 
     def scroll(self, amount=1):
+        """
+        Move the visible contents of the box by `amount` rows.
+
+        Keyword Arguments
+        -----------------
+        amount : int
+            Number of rows to shift by. Defaults: `1`.
+        """
         num_lines = self.text.count("\n")
         self._text_offset += amount
         self._text_offset = max(0, self._text_offset)
@@ -371,7 +436,11 @@ class Box(object):
 
 class Application(object):
     """
-    Application
+    The enclosing Application object.
+
+    Keyword Arguments
+    -----------------
+    root : :py:class:`.Box`
     """
 
     def __init__(self, root=None):
@@ -409,7 +478,12 @@ class Application(object):
 
     def add_window(self, box):
         """
-        add_window
+        Draw a box onto the screen.
+
+        Arguments
+        ---------
+        box : :py:class:`.Box`
+            The box to draw.
         """
 
         win_x, win_y = self.get_window_size()
@@ -449,13 +523,31 @@ class Application(object):
 
     def add_windows(self, *boxes):
         """
-        add_windows
+        Draw multiple boxes onto the screen.
+
+        Arguments
+        ---------
+        boxes : :py:class:`.Box`
+            The boxes to draw.
         """
 
         for box in boxes:
             self.add_window(box)
 
     def edit(self, box, callback=None):
+        """
+        Update the text contents of a particular box.
+
+        Arguments
+        ---------
+        box : :py:class:`.Box`
+            The (editable) box to trigger an edit on.
+
+        Keyword Arguments
+        -----------------
+        callback : function in (self: :py:class:`.Application`)
+            The continuation to run after processing the edit.
+        """
         try:
             textbox = list(filter(lambda x: x[0] == box, self.windows))[0][3]
         except IndexError:
@@ -465,7 +557,8 @@ class Application(object):
 
     def get_window_size(self):
         """
-        get_window_size
+        :returns: the dimensions of the current terminal area.
+        :rtype: :py:class:`.Point`
         """
 
         y, x = self.stdscr.getmaxyx()
@@ -473,6 +566,12 @@ class Application(object):
 
     @property
     def has_active_textbox(self):
+        """
+        Returns
+        -------
+        bool
+            Whether any box in the layout is editable and is currently active.
+        """
         return any(
             getattr(textbox, 'is_active', False)
             for _, _, _, textbox in self.windows
@@ -480,7 +579,12 @@ class Application(object):
 
     def log(self, *args):
         """
-        log
+        Log a message to the console behind the application.
+
+        Arguments
+        ---------
+        args : str
+            The strings to join with a space and log.
         """
 
         msg = " ".join(map(str, args))
@@ -488,13 +592,38 @@ class Application(object):
 
     def on(self, event, func=None):
         """
-        Fancy feast
+        Bind a callback to an event.
+
+        There are two ways to use this method: directly, and as a decorator.
+
+        Directly::
+
+            app.on('q', quit)
+
+        for some function `quit`.
+
+        As a decorator::
+
+            @app.on('j')
+            def scroll_down(app):
+                ls_box.scroll(1)
+
+        Arguments
+        ---------
+        event : str
+            Either the event name to bind to, or a single character to listen
+            for.
+
+        Keyword Arguments
+        -----------------
+        func : function in (self: :py:class:`.Application`)
+            The function to call on the bound event.
         """
 
         def decorator(fn):
             if not asyncio.iscoroutinefunction(fn):
                 fn = asyncio.coroutine(fn)
-            self.register(event, fn)
+            self._register(event, fn)
             return fn
         if func is None:
             return decorator
@@ -502,7 +631,7 @@ class Application(object):
 
     def recalculate_windows(self):
         """
-        recalculate_windows
+        Redraw on window changes.
         """
 
         self.windows = []
@@ -511,20 +640,16 @@ class Application(object):
         self.root.available_width = x
         self.add_windows(*self.root.traverse_pre_order)
 
-    def register(self, event_id, fn):
-        """
-        register
-        """
-
+    def _register(self, event_id, fn):
         self._registry[event_id].append(fn)
         self.log("Run {} on {}".format(fn.__name__, event_id))
 
     def run(self):
         """
-        run
+        Start the application loop and trigger the `ready` event.
         """
 
-        self.loop.call_soon(self.process_key)
+        self.loop.call_soon(self._process_key)
         self.schedule(render)
         for handler in self._registry['ready']:
             self.schedule(handler)
@@ -535,16 +660,17 @@ class Application(object):
 
     def schedule(self, coro_func):
         """
-        schedule
+        Add a function to the application to do later.
+
+        Arguments
+        ---------
+        coro_func : function in (self: :py:class:`.Application`)
+            The function to add to the execution loop.
         """
 
         self.loop.create_task(coro_func(self))
 
-    def process_key(self):
-        """
-        process_key
-        """
-
+    def _process_key(self):
         try:
             if self.has_active_textbox:
                 pass
@@ -555,4 +681,4 @@ class Application(object):
         except curses.error:
             pass
         finally:
-            self.loop.call_later(0.1, self.process_key)
+            self.loop.call_later(0.1, self._process_key)
