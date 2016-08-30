@@ -52,7 +52,7 @@ coverage:
 docs:
 	rm -f docs/hexes.rst
 	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ hexes
+	sphinx-apidoc -e -f -o docs/ hexes
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	open docs/_build/html/index.html

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
-from hexes import (
+from hexes.hexes import (
     Box,
     Style,
 )

@@ -2,8 +2,8 @@
 Credits
 =======
 
-Development Lead
-----------------
+Owner
+-----
 
 * `@wlonk <https://twitter.com/wlonk>`_: Kit La Touche <kit@transneptune.net>
 

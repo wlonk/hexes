@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # The basic imports:
-from hexes import (
+from hexes.hexes import (
     Application,
     Box,
     Style,
