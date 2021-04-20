@@ -60,7 +60,7 @@ requirements = [
 ]
 
 test_requirements = [
-    'py==1.4.26',
+    'py==1.10.0',
     'pytest==2.7.0',
     'pexpect==3.3',
 ]
