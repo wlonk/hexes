@@ -56,7 +56,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    'wheel==0.24.0',
+    'wheel==0.38.1',
 ]
 
 test_requirements = [
